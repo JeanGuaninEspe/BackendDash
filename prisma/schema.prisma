@@ -1,0 +1,452 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+model boveda {
+  Id          BigInt   @id(map: "PK_boveda_Id") @default(autoincrement())
+  Fecha       DateTime
+  EsActual    Int?     @default(1, map: "DF__boveda__EsActual__267ABA7A") @db.SmallInt
+  Moneda_001  Int?     @default(0, map: "DF__boveda__Moneda_0__276EDEB3")
+  Moneda_005  Int?     @default(0, map: "DF__boveda__Moneda_0__286302EC")
+  Moneda_01   Int?     @default(0, map: "DF__boveda__Moneda_0__29572725")
+  Moneda_025  Int?     @default(0, map: "DF__boveda__Moneda_0__2A4B4B5E")
+  Moneda_05   Int?     @default(0, map: "DF__boveda__Moneda_0__2B3F6F97")
+  Moneda_1    Int?     @default(0, map: "DF__boveda__Moneda_1__2C3393D0")
+  Billete_10  Int?     @default(0, map: "DF__boveda__Billete___2D27B809")
+  Billete_2   Int?     @default(0, map: "DF__boveda__Billete___2E1BDC42")
+  Billete_20  Int?     @default(0, map: "DF__boveda__Billete___2F10007B")
+  Billete_5   Int?     @default(0, map: "DF__boveda__Billete___300424B4")
+  IdPeaje     Int?
+  Billete_1   Int?     @default(0, map: "DF__boveda__Billete___31EC6D26")
+  Observacion String?  @db.NVarChar(Max)
+  Total       Decimal? @db.Decimal(18, 2)
+  peaje       peaje?   @relation(fields: [IdPeaje], references: [Id], onDelete: NoAction, map: "boveda$fk_boveda_peaje")
+}
+
+model DB_BACKUP_LOG {
+  LOG_ID             Int       @id(map: "PK__DB_BACKU__4364C88231900D12") @default(autoincrement())
+  LOG_DATE           DateTime? @default(now(), map: "DF__DB_BACKUP__LOG_D__4F47C5E3") @db.DateTime
+  REPLICA_DB_STATE   Int?
+  REPLICA_DB_MENSAJE String?
+  DATABASE_NAME      String    @db.NVarChar(128)
+  BACKUP_PATH        String?   @db.NVarChar(500)
+}
+
+model estados {
+  Id          Int           @id(map: "PK_estados_Id") @default(autoincrement())
+  Nombre      String        @db.NVarChar(50)
+  turnocajero turnocajero[]
+}
+
+model menu_items {
+  IdItem           Int                @id(map: "PK__menu_ite__51E8426207F1B702") @default(autoincrement())
+  ParentId         Int?
+  DisplayName      String?            @db.VarChar(100)
+  IconName         String?            @db.VarChar(50)
+  Route            String?            @db.VarChar(200)
+  NavCap           String?            @db.VarChar(100)
+  Chip             Boolean?           @default(false, map: "DF__menu_items__Chip__662B2B3B")
+  ChipClass        String?            @db.VarChar(100)
+  Orden            Int?               @default(0, map: "DF__menu_item__Orden__671F4F74")
+  Activo           Boolean?           @default(true, map: "DF__menu_item__Activ__681373AD")
+  menu_items       menu_items?        @relation("menu_itemsTomenu_items", fields: [ParentId], references: [IdItem], onDelete: NoAction, onUpdate: NoAction, map: "fk_parent_item")
+  other_menu_items menu_items[]       @relation("menu_itemsTomenu_items")
+  roles_menu_items roles_menu_items[]
+}
+
+model movimientos {
+  Id                                          BigInt          @id(map: "PK_movimientos_Id") @default(autoincrement())
+  Turno                                       Int
+  IdSupervisor                                Int?
+  IdTipoMovimiento                            Int?
+  Recibe_1c                                   Int?            @default(0, map: "DF__movimient__Recib__34C8D9D1")
+  Recibe_5c                                   Int?            @default(0, map: "DF__movimient__Recib__35BCFE0A")
+  Recibe_10c                                  Int?            @default(0, map: "DF__movimient__Recib__36B12243")
+  Recibe_25c                                  Int?            @default(0, map: "DF__movimient__Recib__37A5467C")
+  Recibe_50c                                  Int?            @default(0, map: "DF__movimient__Recib__38996AB5")
+  Recibe_1d                                   Int?            @default(0, map: "DF__movimient__Recib__398D8EEE")
+  Recibe_5d                                   Int?            @default(0, map: "DF__movimient__Recib__3A81B327")
+  Recibe_10d                                  Int?            @default(0, map: "DF__movimient__Recib__3B75D760")
+  Recibe_20d                                  Int?            @default(0, map: "DF__movimient__Recib__3C69FB99")
+  Entrega_1c                                  Int?            @default(0, map: "DF__movimient__Entre__3D5E1FD2")
+  Entrega_5c                                  Int?            @default(0, map: "DF__movimient__Entre__3E52440B")
+  Entrega_10c                                 Int?            @default(0, map: "DF__movimient__Entre__3F466844")
+  Entrega_25c                                 Int?            @default(0, map: "DF__movimient__Entre__403A8C7D")
+  Entrega_50c                                 Int?            @default(0, map: "DF__movimient__Entre__412EB0B6")
+  Entrega_1d                                  Int?            @default(0, map: "DF__movimient__Entre__4222D4EF")
+  Entrega_5d                                  Int?            @default(0, map: "DF__movimient__Entre__4316F928")
+  Entrega_10d                                 Int?            @default(0, map: "DF__movimient__Entre__440B1D61")
+  Entrega_20d                                 Int?            @default(0, map: "DF__movimient__Entre__44FF419A")
+  Fecha                                       DateTime
+  IdPeaje                                     Int?
+  Recibe_2d                                   Int?            @default(0, map: "DF__movimient__Recib__46E78A0C")
+  IdCajero                                    Int?
+  Via                                         Int?
+  IdTurno                                     Int?
+  ParteTrabajo                                BigInt?         @default(0, map: "DF__movimient__Parte__4AB81AF0")
+  Anulaciones                                 Int?            @default(0, map: "DF__movimient__Anula__4BAC3F29")
+  ValorAnulaciones                            Float?          @default(0, map: "DF__movimient__Valor__4CA06362")
+  Simulaciones                                Int?            @default(0, map: "DF__movimient__Simul__4D94879B")
+  ValorSimulaciones                           Float?          @default(0, map: "DF__movimient__Valor__4E88ABD4")
+  Sobrante                                    Float?          @default(0, map: "DF__movimient__Sobra__4F7CD00D")
+  Recibe_1db                                  Int?            @default(0, map: "DF__movimient__Recib__5070F446")
+  Entrega_1db                                 Int?            @default(0, map: "DF__movimient__Entre__5165187F")
+  Estado                                      Int?            @default(0, map: "DF__movimient__Estad__2739D489")
+  tipomovimiento                              tipomovimiento? @relation(fields: [IdTipoMovimiento], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "movimientos$FK_Movimiento_TipoMovimiento")
+  usuarios_movimientos_IdCajeroTousuarios     usuarios?       @relation("movimientos_IdCajeroTousuarios", fields: [IdCajero], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "movimientos$FK_Movimientos_Cajero")
+  peaje                                       peaje?          @relation(fields: [IdPeaje], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "movimientos$FK_Movimientos_Peaje")
+  usuarios_movimientos_IdSupervisorTousuarios usuarios?       @relation("movimientos_IdSupervisorTousuarios", fields: [IdSupervisor], references: [Id], onDelete: Cascade, map: "movimientos$FK_Movimientos_Supervisor")
+  turnos                                      turnos          @relation(fields: [Turno], references: [Id], onUpdate: NoAction, map: "movimientos$movimientos_ibfk_1")
+
+  @@unique([Fecha, IdSupervisor], map: "IX_Movimientos_FechaUsuario")
+}
+
+model movimientos_auditoria {
+  AuditId           Int       @id(map: "PK__movimien__A17F239856005389") @default(autoincrement())
+  TipoOperacion     String?   @db.VarChar(10)
+  FechaAuditoria    DateTime? @db.DateTime
+  Usuario           String?   @db.VarChar(100)
+  Id                Int?
+  Turno             Int?
+  IdSupervisor      Int?
+  IdTipoMovimiento  Int?
+  Recibe_1c         Int?
+  Recibe_5c         Int?
+  Recibe_10c        Int?
+  Recibe_25c        Int?
+  Recibe_50c        Int?
+  Recibe_1d         Int?
+  Recibe_5d         Int?
+  Recibe_10d        Int?
+  Recibe_20d        Int?
+  Entrega_1c        Int?
+  Entrega_5c        Int?
+  Entrega_10c       Int?
+  Entrega_25c       Int?
+  Entrega_50c       Int?
+  Entrega_1d        Int?
+  Entrega_5d        Int?
+  Entrega_10d       Int?
+  Entrega_20d       Int?
+  Fecha             DateTime? @db.DateTime
+  IdPeaje           Int?
+  Recibe_2d         Int?
+  IdCajero          Int?
+  Via               Int?
+  IdTurno           Int?
+  ParteTrabajo      Int?
+  Anulaciones       Int?
+  ValorAnulaciones  Decimal?  @db.Decimal(18, 2)
+  Simulaciones      Int?
+  ValorSimulaciones Decimal?  @db.Decimal(18, 2)
+  Sobrante          Decimal?  @db.Decimal(18, 2)
+  Recibe_1db        Int?
+  Entrega_1db       Int?
+  Estado            Int?
+}
+
+model peaje {
+  Id           Int            @id(map: "PK_peaje_Id") @default(autoincrement())
+  Nombre       String         @db.NVarChar(50)
+  Descripci_n  String?        @map("Descripción") @db.NVarChar(Max)
+  boveda       boveda[]
+  movimientos  movimientos[]
+  usuariopeaje usuariopeaje[]
+}
+
+model roles {
+  Id               Int                @id(map: "PK_roles_Id") @default(autoincrement())
+  Nombre           String             @db.NVarChar(50)
+  Descripci_n      String?            @map("Descripción") @db.NVarChar(Max)
+  ruta             String?            @db.NVarChar(100)
+  roles_menu_items roles_menu_items[]
+  rolusuario       rolusuario[]
+}
+
+model roles_menu_items {
+  Id            Int        @id(map: "PK__roles_me__3214EC07B19AEE26") @default(autoincrement())
+  IdRol         Int
+  IdItem        Int
+  PermisosExtra String?    @db.NVarChar(Max)
+  menu_items    menu_items @relation(fields: [IdItem], references: [IdItem], onDelete: Cascade, onUpdate: NoAction, map: "fk_rmi_item")
+  roles         roles      @relation(fields: [IdRol], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rmi_rol")
+}
+
+model rolusuario {
+  Id              Int       @id(map: "PK_rolusuario_Id") @default(autoincrement())
+  IdUsuario       Int?
+  IdRol           Int?
+  FechaAsignacion DateTime? @default(now(), map: "DF__rolusuari__Fecha__5535A963")
+  roles           roles?    @relation(fields: [IdRol], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "rolusuario$FK_RolUsuario_Roles")
+  usuarios        usuarios? @relation(fields: [IdUsuario], references: [Id], onDelete: Cascade, map: "rolusuario$FK_RolUsuario_Usuarios")
+
+  @@unique([IdUsuario, IdRol], map: "rolusuario$UQ_RolUsuario")
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B61A5146D3A") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
+}
+
+model tipomovimiento {
+  Id          Int           @id(map: "PK_tipomovimiento_Id") @default(autoincrement())
+  Nombre      String?       @db.NVarChar(50)
+  Descripcion String?       @db.NVarChar(50)
+  movimientos movimientos[]
+}
+
+model turnocajero {
+  Id                                          Int       @id(map: "PK_turnocajero_Id") @default(autoincrement())
+  IdSupervisor                                Int?
+  IdCajero                                    Int?
+  Turno                                       Int?
+  Estado                                      Int?
+  FechaAsignacion                             DateTime?
+  Via                                         Int?
+  usuarios_turnocajero_IdCajeroTousuarios     usuarios? @relation("turnocajero_IdCajeroTousuarios", fields: [IdCajero], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "turnocajero$FK_Cajero_turno")
+  usuarios_turnocajero_IdSupervisorTousuarios usuarios? @relation("turnocajero_IdSupervisorTousuarios", fields: [IdSupervisor], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "turnocajero$FK_Supervisor_turno")
+  estados                                     estados?  @relation(fields: [Estado], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "turnocajero$FK_turnocajero_Estado")
+  turnos                                      turnos?   @relation(fields: [Turno], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "turnocajero$FK_TurnoCajero_Turno")
+}
+
+model turnos {
+  Id          Int           @id(map: "PK_turnos_Id") @default(autoincrement())
+  HoraInicio  DateTime?     @db.Time
+  HoraFin     DateTime?     @db.Time
+  Descripcion String?       @db.NVarChar(30)
+  movimientos movimientos[]
+  turnocajero turnocajero[]
+}
+
+model usuariopeaje {
+  Id              Int       @id(map: "PK_usuariopeaje_Id") @default(autoincrement())
+  IdUsuario       Int?
+  IdPeaje         Int?
+  FechaAsignacion DateTime? @default(now(), map: "DF__usuariope__Fecha__628FA481")
+  peaje           peaje?    @relation(fields: [IdPeaje], references: [Id], onDelete: Cascade, map: "usuariopeaje$FK_UsuarioPeaje_Peaje")
+  usuarios        usuarios? @relation(fields: [IdUsuario], references: [Id], onDelete: Cascade, map: "usuariopeaje$FK_UsuarioPeaje_Usuario")
+
+  @@unique([IdUsuario, IdPeaje], map: "usuariopeaje$UQ_UsuarioPeaje")
+}
+
+model usuarios {
+  Id                                             Int             @id(map: "PK_usuarios_Id") @default(autoincrement())
+  Usuario                                        String          @db.NVarChar(100)
+  Nombre                                         String          @db.NVarChar(100)
+  Apellido                                       String          @db.NVarChar(100)
+  Fecha_Creacion                                 DateTime?       @default(now(), map: "DF__usuarios__Fecha___6383C8BA") @db.DateTime
+  Imagen                                         String?         @db.NVarChar(255)
+  Fecha_Actualizado                              DateTime?       @default(now(), map: "DF__usuarios__Fecha___656C112C") @db.DateTime
+  Password                                       String?         @db.NVarChar(100)
+  Telefono                                       String?         @db.NVarChar(15)
+  Grupo                                          Int?
+  Firma                                          String?         @db.NVarChar(255)
+  Estado                                         Int?            @default(1, map: "DF__usuarios__Estado__02084FDA")
+  movimientos_movimientos_IdCajeroTousuarios     movimientos[]   @relation("movimientos_IdCajeroTousuarios")
+  movimientos_movimientos_IdSupervisorTousuarios movimientos[]   @relation("movimientos_IdSupervisorTousuarios")
+  refresh_tokens                                 refresh_tokens?
+  rolusuario                                     rolusuario[]
+  turnocajero_turnocajero_IdCajeroTousuarios     turnocajero[]   @relation("turnocajero_IdCajeroTousuarios")
+  turnocajero_turnocajero_IdSupervisorTousuarios turnocajero[]   @relation("turnocajero_IdSupervisorTousuarios")
+  usuariopeaje                                   usuariopeaje[]
+}
+
+model refresh_tokens {
+  Id        Int       @id(map: "PK__refresh___3214EC07B77B2A43") @default(autoincrement())
+  UserId    Int       @unique(map: "UQ__refresh___1788CC4D6FCCBDD2")
+  TokenHash String    @db.NVarChar(255)
+  ExpiresAt DateTime  @db.DateTime
+  CreatedAt DateTime? @default(now(), map: "DF_refresh_tokens_CreatedAt") @db.DateTime
+  UpdatedAt DateTime? @default(now(), map: "DF_refresh_tokens_UpdatedAt") @db.DateTime
+  usuarios  usuarios  @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_refresh_tokens_usuarios")
+}
+//////VISTAS//////
+
+model VW_VENTAS_TAG {
+  ID_CONCESION        Int       @map("ID_CONCESION")
+  ID_PEAJE            Int       @map("ID_PEAJE")
+  FECHA_FACTURA       DateTime  @map("FECHA_FACTURA")
+  OBSERVACION         String?   @map("OBSERVACION")
+  USUARIO_CREACION    String?   @map("USUARIO_CREACION")
+  FECHA_CREACION      DateTime? @map("FECHA_CREACION")
+  VALOR               Float?    @map("VALOR")
+  CLIENTE             String?   @map("CLIENTE")
+  NUM_DOCUMENTO_CLIENTE String? @map("NUM_DOCUMENTO_CLIENTE")
+  NUMERO_FACTURA      String?   @map("NUMERO_FACTURA")
+  NOTA_CREDITO        String?    @map("NOTA_CREDITO")
+  RETENCION           Float?    @map("RETENCION")
+  FORMA_PAGO          String?   @map("FORMA_PAGO")
+
+@@id([ID_CONCESION, ID_PEAJE])
+  @@map("VW_VENTAS_TAG")
+}
+
+model FACTURACION_COSAD {
+  FECHA_FACTURA      DateTime  @map("FECHA_FACTURA")
+  dia                Int?      @map("dia")
+  mes                Int?      @map("mes")
+  YEAR               Int?      @map("YEAR")
+  NOMBRE_PEAJE       String?   @map("NOMBRE_PEAJE")
+  PTO_EMISION        String?   @map("PTO_EMISION")
+  NUM_FACTURA        String   @map("NUM_FACTURA")
+  AUTORIZACION_SRI   String?   @map("AUTORIZACION_SRI")
+  SUBTOTAL           Float?    @map("SUBTOTAL")
+  IVA                Float?    @map("IVA")
+  TOTAL              Float?    @map("TOTAL")
+  NUMERO_DOCUMENTO   String?   @map("NUMERO_DOCUMENTO")
+  RAZON_SOCIAL       String?   @map("RAZON_SOCIAL")
+  PLACA              String?   @map("PLACA")
+  CATEGORIA_FINAL    Int?   @map("CATEGORIA_FINAL")
+  TIPO               String?   @map("TIPO")
+  TURNO              Int?   @map("TURNO")
+  FECHA_TURNO        DateTime? @map("FECHA_TURNO")
+  NOTA_CREDITO       String?    @map("NOTA_CREDITO")
+  FECHA_NOTA_CREDITO DateTime? @map("FECHA_NOTA_CREDITO")
+
+@@id([FECHA_FACTURA, NUM_FACTURA])
+  @@map("FACTURACION_COSAD")
+}
+
+model RFID_DESCUENTOS_COSAD {
+  row_id          Int       @id @default(autoincrement()) // ID artificial para Prisma
+  ID_CONCESION    Int?      @map("ID_CONCESION")
+  ID_PEAJE        Int?      @map("ID_PEAJE")
+  ID_HORARIO      Int?      @map("ID_HORARIO")
+  ID_ASIG_HORARIO Int?      @map("ID_ASIG_HORARIO")
+  FECHA_HORARIO   DateTime? @map("FECHA_HORARIO")
+  YEAR            Int?      @map("YEAR")
+  MES             Int?      @map("MES")
+  ID_USUARIO      Int?      @map("ID_USUARIO")
+  PORC_DESC       Float?    @map("PORC_DESC")
+  TIPO_EXENTO     String?   @map("TIPO_EXENTO")
+  PLACA_VEHICULO  String?   @map("PLACA_VEHICULO")
+  NUMERO_DOCUMENTO String?  @map("NUMERO_DOCUMENTO")
+  RAZON_SOCIAL    String?   @map("RAZON_SOCIAL")
+  ID_CATEGORIA    Int?      @map("ID_CATEGORIA")
+  OBSERVACION     String?   @map("OBSERVACION")
+  ID_VIA          Int?      @map("ID_VIA")
+  ID_EVENTO       Int?      @map("ID_EVENTO")
+
+  @@map("RFID_DESCUENTOS_COSAD")
+}
+
+model VISTA_TRANSITOS {
+  PEAJE                   String?   @map("PEAJE")
+  FECHA                   DateTime? @map("FECHA")
+  HORA                    String?   @map("HORA")
+  ANIO                    Int? @map("ANIO")
+  MES                     String? @map("MES")
+  SEMANA                  Int?      @map("SEMANA")
+  CABINA                  Int? @map("CABINA")
+  TURNO                   Int? @map("TURNO")
+  No_FACTURA              String   @map("No_FACTURA")
+  NUMERO_PARTE            String?   @map("NUMERO_PARTE")
+  NOMBRE_CAJERO           String?   @map("NOMBRE_CAJERO")
+  PLACA                   String?   @map("PLACA")
+  CATEGORIA               String?   @map("CATEGORIA")
+  COSTO                   Float?    @map("COSTO")
+  TIPO_1                  String?   @map("TIPO_1")
+  TIPO_2                  String?   @map("TIPO_2")
+  OBSERVACION_CABINA      String?   @map("OBSERVACION_CABINA")
+  OBSERVACION_SUPERVISOR  String?   @map("OBSERVACION_SUPERVISOR")
+@@id([No_FACTURA])
+
+  @@map("VISTA_TRANSITOS")
+}
+
+model VW_JUSTIFICACIONES {
+  row_id               Int       @id @default(autoincrement()) // ID artificial para Prisma
+  FECHA_HORARIO        DateTime? @map("FECHA_HORARIO")
+  HORA_EVENTO          String?   @map("HORA_EVENTO")
+  ID_PEAJE             Int?      @map("ID_PEAJE")
+  TURNO                String?   @map("TURNO")
+  ID_VIA               Int?      @map("ID_VIA")
+  CAJERO               String?   @map("CAJERO")
+  TIPO_ANT             String?   @map("TIPO_ANT")
+  TIPO_POST            String?   @map("TIPO_POST")
+  TIPO_VIOLACION       String?   @map("TIPO_VIOLACION")
+  ESTADO               String?   @map("ESTADO")
+  CAT_FINAL            String?   @map("CAT_FINAL")
+  PLACA_VEHICULO       String?   @map("PLACA_VEHICULO")
+  FACTURA              String?   @map("FACTURA")
+  VALOR_CATEGORIA      Float?    @map("VALOR_CATEGORIA")
+  USUARIO_JUST         String?   @map("USUARIO_JUST")
+  FECHA_JUSTIFICACION  DateTime? @map("FECHA_JUSTIFICACION")
+  HORA_JUSTIFICACION   String?   @map("HORA_JUSTIFICACION")
+  OBSERVACION          String?   @map("OBSERVACION")
+  SEMANA               Int?      @map("SEMANA")
+  MES                  Int?      @map("MES")
+  ANIO                 Int?      @map("ANIO")
+
+  @@map("VW_JUSTIFICACIONES")
+}
+
+model VW_RECAUDA_COSAD {
+  NUM_SEMANA        Int?
+  FECHA_HORARIO     DateTime
+  dia               Int?
+  mes               String?
+  YEAR              Int?
+  NOMBRE_PEAJE      String?
+  TURNO             Int?
+  RECAUDA_EFECTIVO  Decimal?
+  RECARGAS_RFID     Decimal?
+  NC                Decimal?
+  EFECTIVO          Decimal?
+  RECAUDA_CHEQUE    Decimal?
+  REPOSICION        Decimal?
+  RECAUDA_FACT      Decimal?
+  TOTAL_DEPOSITADO  Decimal?
+  SOBRANTE          Decimal?
+  FALTANTE          Decimal?
+  REC_EFEC_RFID     Decimal?
+
+  @@id([FECHA_HORARIO])
+  @@map("VW_RECAUDA_COSAD")
+}
+
+model VW_REPORTE_ESTADISTICO_CATVALOR {
+  ID_CONCESION   Int
+  ID_PEAJE       Int
+  FECHA          DateTime
+  AÑO            Int
+  MES            Int
+  FORMA_DE_PAGO  String
+  CABINA         Int
+
+  CAT0           Int?
+  VALOR_0        Int?
+  CAT1           Int?
+  VALOR_1        Int?
+  CAT2           Int?
+  VALOR_2        Int?
+  CAT3           Int?
+  VALOR_3        Int?
+  CAT4           Int?
+  VALOR_4        Int?
+  CAT5           Int?
+  VALOR_5        Int?
+  CAT6           Int?
+  VALOR_6        Int?
+  CAT7           Int?
+  VALOR_7        Int?
+  CAT8           Int?
+  VALOR_8        Int?
+  CAT9           Int?
+  VALOR_9        Int?
+
+  @@id([ID_CONCESION, ID_PEAJE, FECHA])
+  @@map("VW_REPORTE_ESTADISTICO_CATVALOR")
+ 
+}

@@ -49,19 +49,18 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('logout')
     logout(@Res({ passthrough: true }) res: express.Response) {
-        res.clearCookie('access_token', { path: '/' });
-        res.clearCookie('refresh_token', { path: '/api/auth/refresh' });
-        return { ok: true };
+       res.clearCookie("access_token", { path: "/", sameSite: "none", secure: true })
+res.clearCookie("refresh_token", { path: "/api/auth/refresh", sameSite: "none", secure: true })
+return { ok: true };
     }
 
     private setRefreshCookie(res: express.Response, refreshToken: string) {
         if (!refreshToken) return;
-        const isProd = process.env.NODE_ENV === 'production';
         const maxAge = this.authService.getRefreshTtlMs();
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? 'none' : 'lax',
+            secure: true,
+            sameSite: 'none',
             path: '/api/auth/refresh',
             maxAge,
         });
@@ -69,12 +68,11 @@ export class AuthController {
 
     private setAccessCookie(res: express.Response, accessToken: string) {
         if (!accessToken) return;
-        const isProd = process.env.NODE_ENV === 'production';
         const maxAge = 60 * 60 * 1000;
         res.cookie('access_token', accessToken, {
             httpOnly: true,
-            secure: isProd,
-            sameSite: isProd ? 'none' : 'lax',
+            secure: true,
+            sameSite: 'none',
             path: '/',
             maxAge,
         });

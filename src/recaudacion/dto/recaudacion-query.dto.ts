@@ -72,6 +72,17 @@ export class RecaudacionQueryDto {
   take?: number;
 
   @IsOptional()
+  @IsIn(['efectivo', 'recargasTag', 'totalDepositado'])
+  tipoMonto?: 'efectivo' | 'recargasTag' | 'totalDepositado';
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1000)
+  @Max(120000)
+  timeoutMs?: number;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)

@@ -23,4 +23,19 @@ export class REstadisticoController {
     return this.rEstadisticoService.getCabinasAnalysis(query);
   }
 
+  @Get('transitos-diarios')
+  transitosDiarios(@Query() query: REstadisticoQueryDto) {
+    return this.rEstadisticoService.getTransitosDailySummary(query);
+  }
+
+  @Get('anual')
+  findAnnualByMonth(@Query() query: REstadisticoQueryDto) {
+    return this.rEstadisticoService.findAnnualByMonth(query);
+  }
+
+  @Get('reporte-mensual-semanal')
+  monthlyWeeklyReport(@Query() query: REstadisticoQueryDto) {
+    return this.rEstadisticoService.getMonthlyWeeklyReport(query);
+  }
+
 }

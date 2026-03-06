@@ -43,6 +43,23 @@
   - El PDF usa los KPIs enviados en el body; si no llegan, calcula con los datos.
   - Los charts se embeben desde los `dataUrl` recibidos.
 
+### Tránsitos diarios (compatibilidad con transitos)
+- Ruta: GET /api/r-estadistico/transitos-diarios
+- Objetivo: devolver sumatoria de tránsitos por día desde `VW_INFORME_ESTADISTICO_COSAD`, para mover esta carga al backend.
+- Filtros:
+  - desde / hasta (alias de fechaInicio / fechaFin)
+  - nombrePeaje (`CONGOMA` | `LOS ANGELES`) o `idPeaje`
+  - formaDePago
+  - mes (1-12), anio (YYYY)
+  - rango (ultimos7d | ultimos15d | ultimos90d | mesActual | ultimoMes)
+- Notas:
+  - Agrupa y filtra por `FECHA_EVENTO`.
+  - Respuesta con formato compatible de agregados:
+    - `data: []`
+    - `aggregates: { totalTransitos, porDia }`
+- Ejemplo:
+  - `/api/r-estadistico/transitos-diarios?desde=2026-01-01&hasta=2026-01-31&nombrePeaje=CONGOMA`
+
 ## Ventas Tag
 - Ruta: GET /api/ventas-tag
 - Orden: FECHA_FACTURA desc
@@ -109,3 +126,35 @@
   - take (default 200, max 10000)
   - skip (default 0)
   - Respuesta: `[...]`
+
+### Reporte anual por mes (Transitos)
+- Ruta: GET /api/transitos/anual
+- Objetivo: devolver únicamente los datos de la tabla anual (meses x años + totales), calculados en backend para evitar carga y timeouts en frontend.
+- Filtros:
+  - anio (number; opcional, default año actual)
+  - peajeNombre (CONGOMA | LOS ANGELES; prioridad sobre peaje)
+  - nombrePeaje (substring match; prioridad sobre peaje)
+  - peaje (substring match)
+  - cabina (number, exact)
+  - turno (number, exact)
+  - noFactura (substring match)
+  - numeroParte (substring match)
+  - nombreCajero (substring match)
+  - placa (substring match)
+  - categoria (substring match)
+  - tipo1 (substring match)
+  - tipo2 (substring match)
+  - Alias compatibles con front heredado:
+    - idPeaje -> se aplica sobre `PEAJE` (contains)
+    - formaPago -> se aplica sobre `TIPO_1` (contains)
+    - porcDesc -> se aplica sobre `TIPO_2` (contains)
+    - idCategoria -> se aplica sobre `CATEGORIA` (contains)
+- Notas:
+  - Ignora `fechaInicio`, `fechaFin`, `desde`, `hasta`, `rango`, `mes`, `semana`, `take` y `skip` para construir el reporte anual.
+  - Mantiene la misma exclusión de `OBSERVACION_CABINA` usada en los demás cálculos de tránsito.
+  - Devuelve los 12 meses (con ceros cuando no hay datos).
+- Respuesta (estructura):
+  - `anios: number[]`
+  - `filas: [{ mesNumero, mes, valores: { [anio]: number }, totalGeneral }]`
+  - `totalPorAnio: [{ anio, total }]`
+  - `totalGeneral: number`

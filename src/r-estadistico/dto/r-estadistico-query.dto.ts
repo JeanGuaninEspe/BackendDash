@@ -29,9 +29,6 @@ export class REstadisticoQueryDto {
   idConcesion?: number;
 
   @IsOptional()
-  @IsInt()
-  @IsPositive()
-  @Type(() => Number)
   idPeaje?: number;
 
   @IsOptional()
@@ -45,7 +42,34 @@ export class REstadisticoQueryDto {
   cabina?: number;
 
   @IsOptional()
+  @IsInt()
+  @IsPositive()
+  @Type(() => Number)
+  idCategoria?: number;
+
+  @IsOptional()
+  @IsString()
+  peaje?: string;
+
+  @IsOptional()
+  @IsString()
   formaDePago?: string;
+
+  @IsOptional()
+  @IsString()
+  formaPago?: string;
+
+  @IsOptional()
+  @IsString()
+  tipo1?: string;
+
+  @IsOptional()
+  @IsString()
+  tipo2?: string;
+
+  @IsOptional()
+  @IsString()
+  porcDesc?: string;
 
   @IsOptional()
   @IsInt()
@@ -63,6 +87,13 @@ export class REstadisticoQueryDto {
 
   @IsOptional()
   @IsInt()
+  @Min(1)
+  @Max(53)
+  @Type(() => Number)
+  semana?: number;
+
+  @IsOptional()
+  @IsInt()
   @Min(0)
   @Type(() => Number)
   skip?: number;
@@ -73,6 +104,13 @@ export class REstadisticoQueryDto {
   @Max(50000)
   @Type(() => Number)
   take?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1000)
+  @Max(120000)
+  @Type(() => Number)
+  timeoutMs?: number;
 
   @IsOptional()
   @IsBoolean()

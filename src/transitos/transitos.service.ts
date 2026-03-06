@@ -5,12 +5,32 @@ import { TransitosQueryDto } from './dto/transitos-query.dto';
 
 @Injectable()
 export class TransitosService {
+  private readonly excludedObservacionCabina = [
+    'OPERACION ANULADA / POR JUSTIFICACION',
+    'OPERACION ANULADA /',
+    'CARAVANA /',
+    'OPERACION CERRADA /',
+    'VIOLACION DE VIA /',
+    'OPERACION ANULADA / FACTURA CON DATOS',
+    'OPERACION ANULADA / FACTURA CONSUMIDOR FINAL',
+  ];
+  private readonly violacionObservacionCabina = 'VIOLACION DE VIA /';
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: TransitosQueryDto) {
     const normalizedQuery = this.normalizeQuery(query);
     const includeData = normalizedQuery.includeData === true;
-    const where: Prisma.VISTA_TRANSITOSWhereInput = {};
+    const where: Prisma.VISTA_TRANSITOSWhereInput = {
+      OR: [
+        { OBSERVACION_CABINA: null },
+        {
+          OBSERVACION_CABINA: {
+            notIn: this.excludedObservacionCabina,
+          },
+        },
+      ],
+    };
 
     const resolveRango = (rango: string): Prisma.DateTimeFilter | undefined => {
       const now = new Date();
@@ -94,10 +114,10 @@ export class TransitosService {
     if (normalizedQuery.fechaInicio || normalizedQuery.fechaFin) {
       const fechaFilter: Prisma.DateTimeFilter = {};
       if (normalizedQuery.fechaInicio) {
-        fechaFilter.gte = new Date(normalizedQuery.fechaInicio);
+        fechaFilter.gte = this.parseQueryDateStart(normalizedQuery.fechaInicio);
       }
       if (normalizedQuery.fechaFin) {
-        fechaFilter.lte = new Date(normalizedQuery.fechaFin);
+        fechaFilter.lte = this.parseQueryDateEnd(normalizedQuery.fechaFin);
       }
       where.FECHA = fechaFilter;
     }
@@ -106,6 +126,8 @@ export class TransitosService {
       where.PEAJE = { equals: normalizedQuery.peajeNombre };
     } else if (normalizedQuery.nombrePeaje) {
       where.PEAJE = { contains: normalizedQuery.nombrePeaje };
+    } else if (normalizedQuery.idPeaje) {
+      where.PEAJE = { contains: normalizedQuery.idPeaje };
     } else if (normalizedQuery.peaje) {
       where.PEAJE = { contains: normalizedQuery.peaje };
     }
@@ -136,12 +158,18 @@ export class TransitosService {
     }
     if (normalizedQuery.categoria) {
       where.CATEGORIA = { contains: normalizedQuery.categoria };
+    } else if (normalizedQuery.idCategoria) {
+      where.CATEGORIA = { contains: normalizedQuery.idCategoria };
     }
     if (normalizedQuery.tipo1) {
       where.TIPO_1 = { contains: normalizedQuery.tipo1 };
+    } else if (normalizedQuery.formaPago) {
+      where.TIPO_1 = { contains: normalizedQuery.formaPago };
     }
     if (normalizedQuery.tipo2) {
       where.TIPO_2 = { contains: normalizedQuery.tipo2 };
+    } else if (normalizedQuery.porcDesc) {
+      where.TIPO_2 = { contains: normalizedQuery.porcDesc };
     }
     if (typeof normalizedQuery.semana === 'number') {
       where.SEMANA = { equals: normalizedQuery.semana } as any;
@@ -220,6 +248,119 @@ export class TransitosService {
     };
   }
 
+  async findAnnualByMonth(query: TransitosQueryDto) {
+    const normalizedQuery = this.normalizeQuery(query);
+    const annualQuery: TransitosQueryDto = {
+      ...normalizedQuery,
+      formaPago: this.normalizeTipo1Value(normalizedQuery.formaPago),
+      tipo1: this.normalizeTipo1Value(normalizedQuery.tipo1),
+      fechaInicio: undefined,
+      fechaFin: undefined,
+      desde: undefined,
+      hasta: undefined,
+      rango: undefined,
+      semana: undefined,
+      mes: undefined,
+      take: undefined,
+      skip: undefined,
+    };
+
+    const monthLabelsEs = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+    ];
+
+    const monthCaseSql = Prisma.sql`CASE vt.MES
+      WHEN 'January' THEN 1
+      WHEN 'February' THEN 2
+      WHEN 'March' THEN 3
+      WHEN 'April' THEN 4
+      WHEN 'May' THEN 5
+      WHEN 'June' THEN 6
+      WHEN 'July' THEN 7
+      WHEN 'August' THEN 8
+      WHEN 'September' THEN 9
+      WHEN 'October' THEN 10
+      WHEN 'November' THEN 11
+      WHEN 'December' THEN 12
+      ELSE NULL
+    END`;
+
+    const { fromSql, whereSql } = this.buildTemporalSqlParts(annualQuery, [], {
+      applyDefaultDateWindow: false,
+      applyAnnualTipo1Adjustments: true,
+    });
+
+    const monthlyRows = await this.prisma.$queryRaw<Array<{ anio: unknown; mesNumero: unknown; cantidad: unknown }>>(Prisma.sql`
+        SELECT
+          vt.ANIO as anio,
+          ${monthCaseSql} as mesNumero,
+          COUNT(*) as cantidad
+        ${fromSql}
+        ${whereSql}
+        GROUP BY vt.ANIO, ${monthCaseSql}
+        ORDER BY vt.ANIO, ${monthCaseSql}
+      `);
+
+    const yearSet = new Set<number>();
+    const matrix = new Map<number, Map<number, number>>();
+
+    monthlyRows.forEach((row) => {
+      const year = this.toNumber(row.anio);
+      const monthNumber = this.toNumber(row.mesNumero);
+      if (year <= 0 || monthNumber < 1 || monthNumber > 12) return;
+
+      yearSet.add(year);
+      if (!matrix.has(monthNumber)) {
+        matrix.set(monthNumber, new Map<number, number>());
+      }
+
+      matrix.get(monthNumber)?.set(year, this.toNumber(row.cantidad));
+    });
+
+    let years = Array.from(yearSet).sort((a, b) => a - b);
+    if (normalizedQuery.anio !== undefined) {
+      const requestedYear = Number(normalizedQuery.anio);
+      years = Number.isFinite(requestedYear) ? [requestedYear] : years;
+    }
+
+    const totalsByYear = new Map<number, number>();
+    years.forEach((year) => totalsByYear.set(year, 0));
+
+    const rows = Array.from({ length: 12 }, (_, index) => {
+      const mesNumero = index + 1;
+      const valores: Record<string, number> = {};
+      let totalMes = 0;
+
+      years.forEach((year) => {
+        const value = matrix.get(mesNumero)?.get(year) ?? 0;
+        valores[String(year)] = value;
+        totalMes += value;
+        totalsByYear.set(year, (totalsByYear.get(year) ?? 0) + value);
+      });
+
+      return {
+        mesNumero,
+        mes: monthLabelsEs[index],
+        valores,
+        totalGeneral: totalMes,
+      };
+    });
+
+    const totalGeneral = Array.from(totalsByYear.values()).reduce((sum, value) => sum + value, 0);
+    const totalPorAnio = years.map((year) => ({
+      anio: year,
+      total: totalsByYear.get(year) ?? 0,
+    }));
+
+    return {
+      anios: years,
+      filas: rows,
+      totalPorAnio,
+      totalGeneral,
+    };
+  }
+
   private normalizeQuery(query: TransitosQueryDto): TransitosQueryDto {
     const normalized: TransitosQueryDto = { ...query };
     if (!normalized.fechaInicio && normalized.desde) {
@@ -231,8 +372,78 @@ export class TransitosService {
     return normalized;
   }
 
-  private buildTemporalSqlParts(query: TransitosQueryDto, extras: Prisma.Sql[] = []) {
+  private normalizeTipo1Value(value?: string) {
+    if (!value) return value;
+
+    const normalized = value.trim().toUpperCase();
+    if (normalized === 'EFECTIVO' || normalized === 'EFEC.' || normalized === 'EFEC') {
+      return 'EFEC.';
+    }
+
+    return value.trim();
+  }
+
+  private getExcludedObservacionCabina(query: TransitosQueryDto) {
+    const filtroTipo1 = (query.tipo1 ?? query.formaPago ?? '').trim().toUpperCase();
+    if (filtroTipo1.includes('VIOLACION')) {
+      return this.excludedObservacionCabina.filter(item => item !== this.violacionObservacionCabina);
+    }
+
+    return this.excludedObservacionCabina;
+  }
+
+  private hasExplicitTime(dateText: string) {
+    const value = dateText.trim();
+    return value.includes('T') || /\d{2}:\d{2}/.test(value);
+  }
+
+  private parseQueryDateStart(dateText: string) {
+    if (this.hasExplicitTime(dateText)) {
+      return new Date(dateText);
+    }
+
+    const [year, month, day] = dateText.split('T')[0].split('-').map(Number);
+    if ([year, month, day].some((part) => Number.isNaN(part))) {
+      return new Date(dateText);
+    }
+
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  }
+
+  private parseQueryDateEnd(dateText: string) {
+    if (this.hasExplicitTime(dateText)) {
+      return new Date(dateText);
+    }
+
+    const [year, month, day] = dateText.split('T')[0].split('-').map(Number);
+    if ([year, month, day].some((part) => Number.isNaN(part))) {
+      return new Date(dateText);
+    }
+
+    return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  }
+
+  private buildTemporalSqlParts(
+    query: TransitosQueryDto,
+    extras: Prisma.Sql[] = [],
+    options: { applyDefaultDateWindow?: boolean; applyAnnualTipo1Adjustments?: boolean } = {},
+  ) {
     const conditions: Prisma.Sql[] = [];
+    const { applyDefaultDateWindow = true, applyAnnualTipo1Adjustments = false } = options;
+    const effectiveQuery = applyAnnualTipo1Adjustments
+      ? {
+          ...query,
+          formaPago: this.normalizeTipo1Value(query.formaPago),
+          tipo1: this.normalizeTipo1Value(query.tipo1),
+        }
+      : query;
+    const excludedObservacionCabina = applyAnnualTipo1Adjustments
+      ? this.getExcludedObservacionCabina(effectiveQuery)
+      : this.excludedObservacionCabina;
+
+    conditions.push(
+      Prisma.sql`(vt.OBSERVACION_CABINA IS NULL OR vt.OBSERVACION_CABINA NOT IN (${Prisma.join(excludedObservacionCabina)}))`,
+    );
 
     const resolveRango = (rango: string): Prisma.DateTimeFilter | undefined => {
       const now = new Date();
@@ -277,14 +488,14 @@ export class TransitosService {
     };
 
     const hasFechaFiltro = Boolean(
-      query.fechaInicio ||
-      query.fechaFin ||
-      query.mes !== undefined ||
-      query.anio !== undefined ||
-      query.semana !== undefined ||
-      query.rango,
+      effectiveQuery.fechaInicio ||
+      effectiveQuery.fechaFin ||
+      effectiveQuery.mes !== undefined ||
+      effectiveQuery.anio !== undefined ||
+      effectiveQuery.semana !== undefined ||
+      effectiveQuery.rango,
     );
-    if (!hasFechaFiltro) {
+    if (applyDefaultDateWindow && !hasFechaFiltro) {
       const ultimoMes = resolveRango('ultimoMes');
       if (ultimoMes?.gte) {
         conditions.push(Prisma.sql`vt.FECHA >= ${ultimoMes.gte}`);
@@ -294,7 +505,7 @@ export class TransitosService {
       }
     }
 
-    const { current: rangoActual } = buildRanges(query.rango);
+    const { current: rangoActual } = buildRanges(effectiveQuery.rango);
     if (rangoActual?.gte) {
       conditions.push(Prisma.sql`vt.FECHA >= ${rangoActual.gte}`);
     }
@@ -302,71 +513,79 @@ export class TransitosService {
       conditions.push(Prisma.sql`vt.FECHA <= ${rangoActual.lte}`);
     }
 
-    if (query.fechaInicio || query.fechaFin) {
-      if (query.fechaInicio) {
-        conditions.push(Prisma.sql`vt.FECHA >= ${new Date(query.fechaInicio)}`);
+    if (effectiveQuery.fechaInicio || effectiveQuery.fechaFin) {
+      if (effectiveQuery.fechaInicio) {
+        conditions.push(Prisma.sql`vt.FECHA >= ${this.parseQueryDateStart(effectiveQuery.fechaInicio)}`);
       }
-      if (query.fechaFin) {
-        conditions.push(Prisma.sql`vt.FECHA <= ${new Date(query.fechaFin)}`);
+      if (effectiveQuery.fechaFin) {
+        conditions.push(Prisma.sql`vt.FECHA <= ${this.parseQueryDateEnd(effectiveQuery.fechaFin)}`);
       }
     }
 
-    if (query.peajeNombre) {
-      conditions.push(Prisma.sql`vt.PEAJE = ${query.peajeNombre}`);
-    } else if (query.nombrePeaje) {
-      conditions.push(Prisma.sql`vt.PEAJE LIKE ${'%' + query.nombrePeaje + '%'}`);
-    } else if (query.peaje) {
-      conditions.push(Prisma.sql`vt.PEAJE LIKE ${'%' + query.peaje + '%'}`);
+    if (effectiveQuery.peajeNombre) {
+      conditions.push(Prisma.sql`vt.PEAJE = ${effectiveQuery.peajeNombre}`);
+    } else if (effectiveQuery.nombrePeaje) {
+      conditions.push(Prisma.sql`vt.PEAJE LIKE ${'%' + effectiveQuery.nombrePeaje + '%'}`);
+    } else if (effectiveQuery.idPeaje) {
+      conditions.push(Prisma.sql`vt.PEAJE LIKE ${'%' + effectiveQuery.idPeaje + '%'}`);
+    } else if (effectiveQuery.peaje) {
+      conditions.push(Prisma.sql`vt.PEAJE LIKE ${'%' + effectiveQuery.peaje + '%'}`);
     }
 
-    if (query.cabina) {
-      const cabNum = Number(query.cabina);
+    if (effectiveQuery.cabina) {
+      const cabNum = Number(effectiveQuery.cabina);
       if (!Number.isNaN(cabNum)) {
         conditions.push(Prisma.sql`vt.CABINA = ${cabNum}`);
       }
     }
-    if (query.turno) {
-      const turnoNum = Number(query.turno);
+    if (effectiveQuery.turno) {
+      const turnoNum = Number(effectiveQuery.turno);
       if (!Number.isNaN(turnoNum)) {
         conditions.push(Prisma.sql`vt.TURNO = ${turnoNum}`);
       }
     }
-    if (query.noFactura) {
-      conditions.push(Prisma.sql`vt.No_FACTURA LIKE ${'%' + query.noFactura + '%'}`);
+    if (effectiveQuery.noFactura) {
+      conditions.push(Prisma.sql`vt.No_FACTURA LIKE ${'%' + effectiveQuery.noFactura + '%'}`);
     }
-    if (query.numeroParte) {
-      conditions.push(Prisma.sql`vt.NUMERO_PARTE LIKE ${'%' + query.numeroParte + '%'}`);
+    if (effectiveQuery.numeroParte) {
+      conditions.push(Prisma.sql`vt.NUMERO_PARTE LIKE ${'%' + effectiveQuery.numeroParte + '%'}`);
     }
-    if (query.nombreCajero) {
-      conditions.push(Prisma.sql`vt.NOMBRE_CAJERO LIKE ${'%' + query.nombreCajero + '%'}`);
+    if (effectiveQuery.nombreCajero) {
+      conditions.push(Prisma.sql`vt.NOMBRE_CAJERO LIKE ${'%' + effectiveQuery.nombreCajero + '%'}`);
     }
-    if (query.placa) {
-      conditions.push(Prisma.sql`vt.PLACA LIKE ${'%' + query.placa + '%'}`);
+    if (effectiveQuery.placa) {
+      conditions.push(Prisma.sql`vt.PLACA LIKE ${'%' + effectiveQuery.placa + '%'}`);
     }
-    if (query.categoria) {
-      conditions.push(Prisma.sql`vt.CATEGORIA LIKE ${'%' + query.categoria + '%'}`);
+    if (effectiveQuery.categoria) {
+      conditions.push(Prisma.sql`vt.CATEGORIA LIKE ${'%' + effectiveQuery.categoria + '%'}`);
+    } else if (effectiveQuery.idCategoria) {
+      conditions.push(Prisma.sql`vt.CATEGORIA LIKE ${'%' + effectiveQuery.idCategoria + '%'}`);
     }
-    if (query.tipo1) {
-      conditions.push(Prisma.sql`vt.TIPO_1 LIKE ${'%' + query.tipo1 + '%'}`);
+    if (effectiveQuery.tipo1) {
+      conditions.push(Prisma.sql`vt.TIPO_1 LIKE ${'%' + effectiveQuery.tipo1 + '%'}`);
+    } else if (effectiveQuery.formaPago) {
+      conditions.push(Prisma.sql`vt.TIPO_1 LIKE ${'%' + effectiveQuery.formaPago + '%'}`);
     }
-    if (query.tipo2) {
-      conditions.push(Prisma.sql`vt.TIPO_2 LIKE ${'%' + query.tipo2 + '%'}`);
+    if (effectiveQuery.tipo2) {
+      conditions.push(Prisma.sql`vt.TIPO_2 LIKE ${'%' + effectiveQuery.tipo2 + '%'}`);
+    } else if (effectiveQuery.porcDesc) {
+      conditions.push(Prisma.sql`vt.TIPO_2 LIKE ${'%' + effectiveQuery.porcDesc + '%'}`);
     }
-    if (typeof query.semana === 'number') {
-      conditions.push(Prisma.sql`vt.SEMANA = ${query.semana}`);
+    if (typeof effectiveQuery.semana === 'number') {
+      conditions.push(Prisma.sql`vt.SEMANA = ${effectiveQuery.semana}`);
     }
-    if (typeof query.mes === 'number') {
+    if (typeof effectiveQuery.mes === 'number') {
       const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December',
       ];
-      const mesValue = monthNames[query.mes - 1];
+      const mesValue = monthNames[effectiveQuery.mes - 1];
       if (mesValue) {
         conditions.push(Prisma.sql`vt.MES = ${mesValue}`);
       }
     }
-    if (typeof query.anio === 'number') {
-      conditions.push(Prisma.sql`vt.ANIO = ${query.anio}`);
+    if (typeof effectiveQuery.anio === 'number') {
+      conditions.push(Prisma.sql`vt.ANIO = ${effectiveQuery.anio}`);
     }
 
     const allConditions = [...conditions, ...extras];

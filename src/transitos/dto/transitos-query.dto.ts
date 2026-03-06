@@ -37,6 +37,10 @@ export class TransitosQueryDto {
   peaje?: string;
 
   @IsOptional()
+  @IsString()
+  idPeaje?: string;
+
+  @IsOptional()
   @IsIn(['CONGOMA', 'LOS ANGELES'])
   peajeNombre?: string;
 
@@ -74,11 +78,23 @@ export class TransitosQueryDto {
 
   @IsOptional()
   @IsString()
+  idCategoria?: string;
+
+  @IsOptional()
+  @IsString()
   tipo1?: string;
 
   @IsOptional()
   @IsString()
+  formaPago?: string;
+
+  @IsOptional()
+  @IsString()
   tipo2?: string;
+
+  @IsOptional()
+  @IsString()
+  porcDesc?: string;
 
   @IsOptional()
   @Type(() => Number)

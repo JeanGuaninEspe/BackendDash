@@ -10,4 +10,9 @@ export class TransitosController {
   async findAll(@Query() query: TransitosQueryDto) {
     return this.transitosService.findAll(query);
   }
+
+  @Get('anual')
+  async findAnnualByMonth(@Query() query: TransitosQueryDto) {
+    return this.transitosService.findAnnualByMonth(query);
+  }
 }

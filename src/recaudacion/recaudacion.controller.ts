@@ -10,4 +10,14 @@ export class RecaudacionController {
   findAll(@Query() query: RecaudacionQueryDto) {
     return this.recaudacionService.findAll(query);
   }
+
+  @Get('reporte-diario-peajes')
+  findDailyReportByPeajes(@Query() query: RecaudacionQueryDto) {
+    return this.recaudacionService.findDailyReportByPeajes(query);
+  }
+
+  @Get('anual')
+  findAnnual(@Query() query: RecaudacionQueryDto) {
+    return this.recaudacionService.findAnnual(query);
+  }
 }

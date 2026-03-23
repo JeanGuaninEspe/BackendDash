@@ -15,10 +15,11 @@ import { ValidationPipe } from '@nestjs/common';
          'http://192.168.80.39:3001',
          'https://vial25dash.pages.dev',
          'https://0q44x1tx-4321.use2.devtunnels.ms',
+         'https://app.vial25.dpdns.org'
        ],
        credentials: true,
      });
-    app.setGlobalPrefix('api');
+    app.setGlobalPrefix('v1');
     // Configuración global de ValidationPipe para class-validator
     app.useGlobalPipes(
       new ValidationPipe({

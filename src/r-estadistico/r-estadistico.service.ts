@@ -297,6 +297,30 @@ export class REstadisticoService {
     };
   }
 
+  async getTodayTransitLive(query: REstadisticoQueryDto) {
+    const normalizedQuery = this.normalizeQuery(query);
+    const { fromSql, whereSql } = this.buildMonthlyWeeklyReportSqlParts(normalizedQuery, [
+      Prisma.sql`CAST(ie.FECHA_EVENTO as date) = CAST(GETDATE() as date)`,
+    ]);
+
+    const rows = await this.prisma.$queryRaw<Array<{ totalTransitos: unknown }>>(Prisma.sql`
+      SELECT COUNT(*) as totalTransitos
+      ${fromSql}
+      ${whereSql}
+    `);
+
+    const now = new Date();
+    const idPeaje = typeof normalizedQuery.idPeaje === 'number' ? normalizedQuery.idPeaje : null;
+
+    return {
+      fecha: now.toISOString().slice(0, 10),
+      idPeaje,
+      nombrePeaje: idPeaje ? this.getPeajeNameFromId(idPeaje) ?? normalizedQuery.nombrePeaje ?? null : null,
+      totalTransitos: this.toNumber(rows[0]?.totalTransitos),
+      actualizadoEn: now.toISOString(),
+    };
+  }
+
   private normalizeQuery(query: REstadisticoQueryDto): REstadisticoQueryDto {
     const normalized: REstadisticoQueryDto = { ...query };
 
